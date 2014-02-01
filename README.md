@@ -3,6 +3,7 @@ pgsynck
 
 Run SQL text through the PostgreSQL parser and return syntax error information for each contained statement.
 
+```
 Usage example:
 --------------
 test=# select * from pgsynck
@@ -49,6 +50,7 @@ cursorpos  | 12
 sqlerrcode | 16801924
 message    | syntax error at or near "my"
 hint       | 
+```
 
 TODO:
 --------------

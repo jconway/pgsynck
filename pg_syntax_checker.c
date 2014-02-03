@@ -1,5 +1,5 @@
 /*
- * pgsynck
+ * pg_syntax_checker
  *
  * Run SQL text through the PostgreSQL parser and return syntax error
  * information for each contained statement.
@@ -35,9 +35,7 @@
 
 PG_MODULE_MAGIC;
 
-#define PGSYNCK_COLS	5
-
-static char *get_one_query(char **q);
+#define OUTPUT_COLS	4
 
 typedef enum
 {
@@ -50,15 +48,13 @@ typedef enum
 /*
  * exported functions
  */
-extern Datum pgsynck(PG_FUNCTION_ARGS);
-PG_FUNCTION_INFO_V1(pgsynck);
+extern Datum pg_syntax_checker(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_syntax_checker);
 Datum
-pgsynck(PG_FUNCTION_ARGS)
+pg_syntax_checker(PG_FUNCTION_ARGS)
 {
 /*	List			   *raw_parsetree_list = NULL; */
 	char			   *query_string = NULL;
-	char			   *oneq = NULL;
-	char			   *q;
 	ErrorData		   *edata = NULL;
 	MemoryContext		oldcontext = CurrentMemoryContext;
 	MemoryContext		per_query_ctx;
@@ -91,24 +87,19 @@ pgsynck(PG_FUNCTION_ARGS)
 
 	MemoryContextSwitchTo(oldcontext);
 
-	q = query_string = text_to_cstring(PG_GETARG_TEXT_PP(0));
-	oneq = get_one_query(&q);
+	query_string = text_to_cstring(PG_GETARG_TEXT_PP(0));
 
-	while (oneq != NULL)
 	{
 		int			j = 0;
-		Datum		values[PGSYNCK_COLS];
-		bool		nulls[PGSYNCK_COLS];
+		Datum		values[OUTPUT_COLS];
+		bool		nulls[OUTPUT_COLS];
 
 		memset(values, 0, sizeof(values));
 		memset(nulls, 0, sizeof(nulls));
 
-		/* sql */
-		values[j++] = CStringGetTextDatum(oneq);
-
 		PG_TRY();
 		{
-			raw_parser(oneq);
+			raw_parser(query_string);
 
 			/* cursorpos */
 			values[j++] = Int32GetDatum(0);
@@ -147,8 +138,6 @@ pgsynck(PG_FUNCTION_ARGS)
 			FreeErrorData(edata);
 		}
 		PG_END_TRY();
-
-		oneq = get_one_query(&q);
 	}
 
 	/* clean up and return the tuplestore */
@@ -157,122 +146,3 @@ pgsynck(PG_FUNCTION_ARGS)
 	return (Datum) 0;
 }
 
-static char *
-get_one_query(char **q)
-{
-	char	   *retstr = NULL;
-	char	   *p = *q;
-	quotetype	qtype = NOTINAQUOTE;
-	bool		in_quote = false;
-	bool		in_comment = false;
-	char	   *dolq = NULL;
-	char	   *dolq_startp = NULL;
-	bool		dolq_started = false;
-
-
-	for(;;)
-	{
-		/* single quote */
-		if (!in_comment && **q == '\'')
-		{
-			if (!in_quote)
-			{
-				qtype = SINGLEQUOTE;
-				in_quote = true;
-			}
-			else if (qtype == SINGLEQUOTE)
-			{
-				qtype = NOTINAQUOTE;
-				in_quote = false;
-			}
-			/* ignore single quote if already in another type of quote */
-		}
-
-		/* double quote */
-		if (!in_comment && **q == '\"')
-		{
-			if (!in_quote)
-			{
-				qtype = DOUBLEQUOTE;
-				in_quote = true;
-			}
-			else if (qtype == DOUBLEQUOTE)
-			{
-				qtype = NOTINAQUOTE;
-				in_quote = false;
-			}
-			/* ignore double quote if already in another type of quote */
-		}
-
-		/* dollar quote */
-		if (!in_comment && **q == '$')
-		{
-			if (!in_quote)
-			{
-				if (!dolq_started)
-				{
-					dolq_startp = *q;
-					dolq_started = true;
-				}
-				else
-				{
-					int		dolq_len = *q - dolq_startp;
-
-					dolq = palloc0(dolq_len + 1);
-					memcpy(dolq, dolq_startp, dolq_len);
-
-					qtype = DOLLARQUOTE;
-					in_quote = true;
-				}
-			}
-			else if (qtype == DOLLARQUOTE)
-			{
-				int		dolq_len = strlen(dolq);
-
-				if (strncmp(*q, dolq, dolq_len) == 0)
-				{
-					/* skip ahead */
-					*q += dolq_len;
-					qtype = NOTINAQUOTE;
-					in_quote = false;
-				}
-			}
-			/* ignore dollar quote if already in another type of quote */
-		}
-
-		/* are we starting a comment */
-		if (!in_comment && !in_quote && **q == '/' && *(*q + 1) == '*')
-		{
-			/* skip ahead */
-			(*q)++;
-			in_comment = true;
-		}
-
-		/* are we ending a comment */
-		if (in_comment && **q == '*' && *(*q + 1) == '/')
-		{
-			/* skip ahead */
-			(*q)++;
-			in_comment = false;
-		}
-
-		if ((!in_quote && !in_comment && **q == ';') || **q == 0)
-		{
-			size_t	retstrlen = *q - p;
-
-			if (retstrlen != 0)
-			{
-				retstr = palloc0(retstrlen + 1);
-				memcpy(retstr, p, retstrlen);
-			}
-			break;
-		}
-
-		(*q)++;
-	}
-
-	if (**q == ';')
-		(*q)++;
-
-	return retstr;
-}

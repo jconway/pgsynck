@@ -1,0 +1,5 @@
+# pg_syntac_checker extension
+comment = 'Extension to run an SQL string through the Postgres Parser.'
+default_version = '1.0'
+module_pathname = '$libdir/pg_syntax_checker'
+relocatable = true

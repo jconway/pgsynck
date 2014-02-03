@@ -1,5 +1,0 @@
-# pgsynck extension
-comment = 'DANGER: executes shell commands'
-default_version = '1.0'
-module_pathname = '$libdir/pgsynck'
-relocatable = true

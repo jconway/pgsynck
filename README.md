@@ -1,4 +1,4 @@
-pgsynck
+pg_syntax_checker
 =======
 
 Run SQL text through the PostgreSQL parser and return syntax error information for each contained statement.
@@ -6,7 +6,7 @@ Run SQL text through the PostgreSQL parser and return syntax error information f
 ```
 Usage example:
 --------------
-test=# select * from pgsynck
+test=# select * from pg_syntax_checker
 test-# ($$
 test$#     select '1;2;3/* not a comment */' from "My;Table" as from;
 test$#     select x from (select 1 as x);

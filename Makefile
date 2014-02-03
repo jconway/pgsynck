@@ -1,8 +1,8 @@
-MODULE_big = pgsynck
-OBJS	= pgsynck.o
+MODULE_big = pg_syntax_checker
+OBJS	= pg_syntax_checker.o
 PG_CPPFLAGS = -I$(libpq_srcdir)
-EXTENSION = pgsynck
-DATA = pgsynck--1.0.sql
+EXTENSION = pg_syntax_checker
+DATA = pg_syntax_checker--1.0.sql
 
 
 # the db name is hard-coded in the tests
@@ -13,7 +13,7 @@ PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 else
-subdir = contrib/pgsynck
+subdir = contrib/pg_syntax_checker
 top_builddir = ../..
 include $(top_builddir)/src/Makefile.global
 include $(top_srcdir)/contrib/contrib-global.mk

@@ -54,4 +54,4 @@ hint       |
 
 TODO:
 --------------
-1. If last statement ends in semicolon, an extra empty SQL string is checked. Skip that empty string
+1. plpgsql syntax check?

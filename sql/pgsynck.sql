@@ -16,3 +16,10 @@ select * from pgsynck
     select a from -- b; -- select 1;
     c
 $$);
+
+select * from pgsynck
+($$
+    
+    select 2;
+    
+$$);

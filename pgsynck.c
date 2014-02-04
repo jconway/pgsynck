@@ -161,7 +161,7 @@ static char *
 get_one_query(char **q)
 {
 	char	   *retstr = NULL;
-	char	   *p = *q;
+	char	   *p;
 	quotetype	qtype = NOTINAQUOTE;
 	bool		in_quote = false;
 	bool		in_comment = false;
@@ -171,6 +171,15 @@ get_one_query(char **q)
 	bool		sl_comment = false;
 	bool		ml_comment = false;
 
+	/* skip over any leading whitespace */
+	while (isspace(**q))
+		(*q)++;
+
+	/* fast path if we are already at the end of input */
+	if (**q == 0)
+		return NULL;
+
+	p = *q;
 	for(;;)
 	{
 		/* single quote */

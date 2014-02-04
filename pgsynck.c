@@ -168,7 +168,8 @@ get_one_query(char **q)
 	char	   *dolq = NULL;
 	char	   *dolq_startp = NULL;
 	bool		dolq_started = false;
-
+	bool		sl_comment = false;
+	bool		ml_comment = false;
 
 	for(;;)
 	{
@@ -240,20 +241,36 @@ get_one_query(char **q)
 			/* ignore dollar quote if already in another type of quote */
 		}
 
-		/* are we starting a comment */
+		/* are we starting a multiline comment */
 		if (!in_comment && !in_quote && **q == '/' && *(*q + 1) == '*')
 		{
 			/* skip ahead */
 			(*q)++;
+			ml_comment = true;
 			in_comment = true;
 		}
 
-		/* are we ending a comment */
-		if (in_comment && **q == '*' && *(*q + 1) == '/')
+		/* are we starting a single line comment */
+		if (!in_comment && !in_quote && **q == '-' && *(*q + 1) == '-')
 		{
 			/* skip ahead */
 			(*q)++;
-			in_comment = false;
+			sl_comment = true;
+			in_comment = true;
+		}
+
+		/* are we ending a multiline comment */
+		if (in_comment && ml_comment && **q == '*' && *(*q + 1) == '/')
+		{
+			/* skip ahead */
+			(*q)++;
+			ml_comment = in_comment = false;
+		}
+
+		/* are we ending a single line comment */
+		if (in_comment && sl_comment && **q == '\n')
+		{
+			sl_comment = in_comment = false;
 		}
 
 		if ((!in_quote && !in_comment && **q == ';') || **q == 0)

@@ -3,6 +3,7 @@ OBJS	= pgsynck.o
 PG_CPPFLAGS = -I$(libpq_srcdir)
 EXTENSION = pgsynck
 DATA = pgsynck--1.0.sql
+REGRESS = pgsynck
 
 
 # the db name is hard-coded in the tests
